@@ -1,0 +1,27 @@
+# SEC Filing RAG Application - Dependencies (Free Stack)
+
+# Data Acquisition
+edgartools>=5.0.0              # SEC EDGAR access (free, open-source)
+
+# RAG Framework
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-ollama>=0.1.0       # Ollama integration
+
+# Vector Database
+chromadb>=0.4.0               # Local vector database
+
+# Free Embeddings (local)
+sentence-transformers>=2.2.0  # Local embedding models
+
+# UI
+streamlit>=1.30.0
+
+# Document Processing
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+pandas>=2.0.0
+tqdm>=4.66.0
