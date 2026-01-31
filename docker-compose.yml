@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Ollama LLM service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: asksec-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # For Mac/Windows without GPU, remove the deploy section above
+
+  # AskSEC application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asksec-app
+    ports:
+      - "8501:8501"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - EDGAR_IDENTITY=${EDGAR_IDENTITY:-"User user@example.com"}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

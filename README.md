@@ -2,6 +2,7 @@
 
 A RAG-powered chatbot that answers questions about SEC 10-K filings using local AI.
 
+[![CI](https://github.com/PhunsokNorboo/AskSEC/actions/workflows/ci.yml/badge.svg)](https://github.com/PhunsokNorboo/AskSEC/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-0.2+-green.svg)
 ![Ollama](https://img.shields.io/badge/Ollama-Llama%203.2-purple.svg)
@@ -16,16 +17,45 @@ Ask natural language questions about company filings:
 
 The system retrieves relevant passages from SEC 10-K filings and generates accurate, cited answers.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     STREAMLIT WEB UI                            │
+│                    (Chat Interface)                             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      RAG PIPELINE                               │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │   Query      │ -> │  Retrieval   │ -> │  Generation  │      │
+│  │ Processing   │    │  (ChromaDB)  │    │  (Llama 3.2) │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     DATA LAYER                                  │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │  SEC EDGAR   │ -> │   Parser &   │ -> │   ChromaDB   │      │
+│  │  (edgartools)│    │   Chunker    │    │ (Embeddings) │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
 | **LLM** | Ollama + Llama 3.2 (local, free) |
-| **Embeddings** | sentence-transformers |
+| **Embeddings** | sentence-transformers (all-MiniLM-L6-v2) |
 | **Vector DB** | ChromaDB |
 | **Framework** | LangChain |
 | **Data Source** | SEC EDGAR |
 | **UI** | Streamlit |
+| **Testing** | pytest + coverage |
+| **CI/CD** | GitHub Actions |
 
 **Total Cost: $0** - Everything runs locally.
 
@@ -84,6 +114,21 @@ streamlit run app/streamlit_app.py
 
 Open http://localhost:8501
 
+## Docker
+
+Run with Docker Compose (includes Ollama):
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f app
+
+# Stop
+docker-compose down
+```
+
 ## Project Structure
 
 ```
@@ -92,37 +137,57 @@ AskSEC/
 │   └── streamlit_app.py      # Web interface
 ├── src/
 │   ├── data/                 # Download & processing
-│   ├── embeddings/           # Vector store operations
-│   └── rag/                  # RAG chain & prompts
+│   │   ├── downloader.py     # SEC EDGAR downloader
+│   │   ├── parser.py         # 10-K section extraction
+│   │   └── preprocessor.py   # Document chunking
+│   ├── embeddings/
+│   │   └── vector_store.py   # ChromaDB operations
+│   ├── rag/
+│   │   ├── chain.py          # RAG pipeline
+│   │   └── prompts.py        # Prompt templates
+│   └── utils/
+│       ├── config.py         # Configuration
+│       └── logger.py         # Logging setup
+├── tests/                    # Test suite
 ├── scripts/                  # Build scripts
 ├── data/
 │   ├── raw/                  # SEC filings
+│   ├── processed/            # Chunked documents
 │   └── chroma_db/            # Vector database
+├── .github/workflows/        # CI/CD
+├── Dockerfile
+├── docker-compose.yml
+├── pyproject.toml
 └── requirements.txt
 ```
 
-## How It Works
+## Development
 
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_parser.py -v
 ```
-User Question
-     │
-     ▼
-┌─────────────┐
-│  Retriever  │ ◄── ChromaDB (semantic search)
-└─────────────┘
-     │
-     ▼
-┌─────────────┐
-│   Prompt    │ ◄── Context + Question
-└─────────────┘
-     │
-     ▼
-┌─────────────┐
-│   Llama 3.2 │ ◄── Local LLM via Ollama
-└─────────────┘
-     │
-     ▼
-Answer + Sources
+
+### Code Quality
+
+```bash
+# Linting
+ruff check src/ tests/
+
+# Type checking
+mypy src/
+
+# Pre-commit hooks
+pre-commit install
+pre-commit run --all-files
 ```
 
 ## Features
@@ -146,12 +211,34 @@ Answer + Sources
 >
 > *Sources: TSLA 10-K 2025-01-30, Item 1A Risk Factors*
 
+## Troubleshooting
+
+### Ollama not running
+```bash
+# Start Ollama service
+ollama serve
+
+# Verify model is available
+ollama list
+```
+
+### Empty responses
+- Ensure vector database is built: `python scripts/build_vectorstore.py`
+- Check that Ollama is running on port 11434
+
+### Slow responses
+- First query loads embedding model (takes ~10s)
+- Subsequent queries are faster
+- Consider using GPU acceleration for Ollama
+
 ## Future Improvements
 
 - [ ] Add 10-Q quarterly reports
 - [ ] Financial table extraction
 - [ ] Multi-year trend analysis
 - [ ] Deploy to cloud
+- [ ] Add conversation memory
+- [ ] Implement semantic caching
 
 ## License
 
