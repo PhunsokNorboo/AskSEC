@@ -1,6 +1,5 @@
 """SEC 10-K Filing Parser - Extract key sections from filings."""
 import re
-from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 
@@ -20,24 +19,41 @@ class DocumentSection:
 class SEC10KParser:
     """Parse and extract sections from SEC 10-K filings."""
 
-    # Key sections to extract (most valuable for RAG)
+    # Key sections to extract from 10-K filings
     SECTIONS = {
+        # Part I
         "1": "Business",
         "1A": "Risk Factors",
         "1B": "Unresolved Staff Comments",
         "1C": "Cybersecurity",
+        "2": "Properties",
+        "3": "Legal Proceedings",
+        "4": "Mine Safety Disclosures",
+        # Part II
+        "5": "Market for Registrant's Common Equity",
+        "6": "Selected Financial Data",
         "7": "Management's Discussion and Analysis",
         "7A": "Quantitative and Qualitative Disclosures About Market Risk",
         "8": "Financial Statements and Supplementary Data",
+        "9": "Changes in and Disagreements With Accountants",
+        "9A": "Controls and Procedures",
+        "9B": "Other Information",
+        "9C": "Disclosure Regarding Foreign Jurisdictions",
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the parser with section patterns."""
         self.section_patterns = self._build_section_patterns()
 
-    def _build_section_patterns(self) -> Dict[str, re.Pattern]:
-        """Build regex patterns to match section headers."""
-        patterns = {}
+    def _build_section_patterns(self) -> dict[str, re.Pattern[str]]:
+        """
+        Build regex patterns to match section headers.
+
+        Returns:
+            Dictionary mapping item numbers to compiled regex patterns
+            that match various header formats (e.g., "Item 1A", "ITEM 1A.").
+        """
+        patterns: dict[str, re.Pattern[str]] = {}
         for item_num, item_title in self.SECTIONS.items():
             # Match variations like:
             # "Item 1A", "ITEM 1A.", "Item 1A -", "Item 1A:", "ITEM 1A. Risk Factors"
@@ -47,7 +63,7 @@ class SEC10KParser:
             patterns[item_num] = re.compile(pattern, re.IGNORECASE)
         return patterns
 
-    def parse_filing(self, text: str) -> Dict[str, DocumentSection]:
+    def parse_filing(self, text: str) -> dict[str, DocumentSection]:
         """
         Parse a 10-K filing and extract key sections.
 
@@ -111,7 +127,21 @@ class SEC10KParser:
         return sections
 
     def _clean_text(self, text: str) -> str:
-        """Clean and normalize text content."""
+        """
+        Clean and normalize text content.
+
+        Performs the following normalizations:
+        - Collapses multiple spaces/tabs to single space
+        - Reduces excessive newlines
+        - Removes page numbers and common headers/footers
+        - Normalizes quotes and dashes to ASCII equivalents
+
+        Args:
+            text: Raw text content from filing
+
+        Returns:
+            Cleaned and normalized text
+        """
         # Remove excessive whitespace (but preserve paragraph structure)
         text = re.sub(r'[ \t]+', ' ', text)  # Multiple spaces/tabs to single space
         text = re.sub(r'\n{3,}', '\n\n', text)  # Multiple newlines to double
@@ -127,7 +157,7 @@ class SEC10KParser:
 
         return text.strip()
 
-    def get_section_summary(self, sections: Dict[str, DocumentSection]) -> Dict[str, int]:
+    def get_section_summary(self, sections: dict[str, DocumentSection]) -> dict[str, int]:
         """Get a summary of extracted sections with character counts."""
         return {
             f"Item {num} ({sec.item_title})": len(sec.content)
@@ -137,8 +167,8 @@ class SEC10KParser:
     def extract_specific_sections(
         self,
         text: str,
-        section_numbers: List[str]
-    ) -> Dict[str, DocumentSection]:
+        section_numbers: list[str]
+    ) -> dict[str, DocumentSection]:
         """
         Extract only specific sections from filing.
 

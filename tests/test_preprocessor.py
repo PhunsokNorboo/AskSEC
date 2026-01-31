@@ -136,10 +136,28 @@ class TestDocumentChunker:
     def test_short_content_single_chunk(self, chunker):
         """Test that short content results in single chunk."""
         short_content = "This is a very short piece of text."
-        docs = chunker.chunk_section(short_content, {"ticker": "TEST"})
+        # Use include_header=False to test raw content
+        docs = chunker.chunk_section(short_content, {"ticker": "TEST"}, include_header=False)
 
         assert len(docs) == 1
         assert docs[0].page_content == short_content
+
+    def test_chunk_includes_context_header(self, chunker):
+        """Test that chunks include context header by default."""
+        content = "Sample financial content for testing."
+        metadata = {
+            "ticker": "AAPL",
+            "company_name": "Apple Inc.",
+            "item_number": "1A",
+            "item_title": "Risk Factors",
+            "filing_date": "2025-01-15"
+        }
+        docs = chunker.chunk_section(content, metadata, include_header=True)
+
+        assert len(docs) == 1
+        assert "[Apple Inc. (AAPL)" in docs[0].page_content
+        assert "Item 1A: Risk Factors" in docs[0].page_content
+        assert content in docs[0].page_content
 
     def test_chunk_indices_are_sequential(self, chunker, sample_section):
         """Test that chunk indices are sequential starting from 0."""

@@ -1,12 +1,14 @@
 """SEC Filing RAG Chatbot - Streamlit Application."""
 import sys
 from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import streamlit as st
+
 from src.rag.chain import SECFilingRAG
 
 # Page configuration
@@ -86,12 +88,12 @@ st.markdown("""
 
 
 @st.cache_resource
-def initialize_rag():
+def initialize_rag() -> SECFilingRAG:
     """Initialize the RAG system (cached to avoid reloading)."""
     return SECFilingRAG()
 
 
-def display_sources(sources):
+def display_sources(sources: List[Dict[str, Any]]) -> None:
     """Display source documents in an expandable section."""
     if not sources:
         return
@@ -107,7 +109,7 @@ def display_sources(sources):
             st.divider()
 
 
-def main():
+def main() -> None:
     """Main application."""
 
     # Initialize RAG system

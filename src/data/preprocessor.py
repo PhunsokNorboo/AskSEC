@@ -1,8 +1,9 @@
 """Document Preprocessor - Chunk documents for embedding."""
 import hashlib
-from typing import List, Dict, Any
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import Any
+
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.data.parser import DocumentSection
 from src.utils.config import settings
@@ -13,9 +14,9 @@ class DocumentChunker:
 
     def __init__(
         self,
-        chunk_size: int = None,
-        chunk_overlap: int = None,
-    ):
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
+    ) -> None:
         """
         Initialize the chunker.
 
@@ -46,22 +47,37 @@ class DocumentChunker:
             length_function=len,
         )
 
-    def _generate_chunk_id(self, ticker: str, item_number: str, chunk_index: int) -> str:
-        """Generate a unique ID for a chunk."""
-        unique_string = f"{ticker}_{item_number}_{chunk_index}"
+    def _generate_chunk_id(
+        self, ticker: str, item_number: str, chunk_index: int, filing_date: str = ""
+    ) -> str:
+        """
+        Generate a unique ID for a chunk.
+
+        Args:
+            ticker: Company stock ticker
+            item_number: Section item number (e.g., "1A")
+            chunk_index: Index of chunk within the section
+            filing_date: Filing date (e.g., "2024-02-15")
+
+        Returns:
+            12-character hex string unique to this chunk
+        """
+        unique_string = f"{ticker}_{filing_date}_{item_number}_{chunk_index}"
         return hashlib.md5(unique_string.encode()).hexdigest()[:12]
 
     def chunk_section(
         self,
         content: str,
-        metadata: Dict[str, Any]
-    ) -> List[Document]:
+        metadata: dict[str, Any],
+        include_header: bool = True
+    ) -> list[Document]:
         """
         Chunk a document section into smaller pieces.
 
         Args:
             content: Text content to chunk
             metadata: Metadata to attach to each chunk
+            include_header: If True, prepend section header to each chunk for context
 
         Returns:
             List of LangChain Document objects
@@ -69,14 +85,29 @@ class DocumentChunker:
         # Split the content
         chunks = self.text_splitter.split_text(content)
 
+        # Build context header for each chunk
+        ticker = metadata.get('ticker', 'Unknown')
+        company = metadata.get('company_name', 'Unknown Company')
+        item_num = metadata.get('item_number', '')
+        item_title = metadata.get('item_title', '')
+        filing_date = metadata.get('filing_date', '')
+
+        context_header = ""
+        if include_header:
+            context_header = f"[{company} ({ticker}) | 10-K {filing_date} | Item {item_num}: {item_title}]\n\n"
+
         documents = []
         for i, chunk in enumerate(chunks):
             # Generate unique chunk ID
             chunk_id = self._generate_chunk_id(
                 metadata.get('ticker', 'UNK'),
                 metadata.get('item_number', '0'),
-                i
+                i,
+                metadata.get('filing_date', '')
             )
+
+            # Prepend context header to chunk content
+            chunk_with_context = context_header + chunk if include_header else chunk
 
             # Create metadata for this chunk
             chunk_metadata = {
@@ -84,11 +115,13 @@ class DocumentChunker:
                 "chunk_index": i,
                 "chunk_id": chunk_id,
                 "total_chunks": len(chunks),
-                "chunk_size": len(chunk),
+                "chunk_size": len(chunk_with_context),
+                "is_first_chunk": i == 0,
+                "is_last_chunk": i == len(chunks) - 1,
             }
 
             documents.append(Document(
-                page_content=chunk,
+                page_content=chunk_with_context,
                 metadata=chunk_metadata
             ))
 
@@ -96,11 +129,11 @@ class DocumentChunker:
 
     def process_filing(
         self,
-        sections: Dict[str, DocumentSection],
+        sections: dict[str, DocumentSection],
         ticker: str,
         filing_date: str,
         company_name: str
-    ) -> List[Document]:
+    ) -> list[Document]:
         """
         Process all sections of a filing into chunks.
 
@@ -135,7 +168,7 @@ class DocumentChunker:
 
         return all_documents
 
-    def get_chunking_stats(self, documents: List[Document]) -> Dict[str, Any]:
+    def get_chunking_stats(self, documents: list[Document]) -> dict[str, Any]:
         """Get statistics about the chunked documents."""
         if not documents:
             return {"total_chunks": 0}

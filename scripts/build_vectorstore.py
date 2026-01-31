@@ -41,19 +41,21 @@ def build_vector_database():
 
     vector_store = VectorStoreManager()
 
-    # Check if collection already exists
+    # Create vector store (creates collection if it doesn't exist)
+    vector_store.create_or_load_store()
+
+    # Check if collection already has documents
     stats = vector_store.get_collection_stats()
     if stats.get("count", 0) > 0:
         print(f"\nExisting collection found with {stats['count']} documents.")
         response = input("Delete and rebuild? (y/n): ").strip().lower()
         if response == 'y':
             vector_store.delete_collection()
+            # Recreate the collection after deletion
+            vector_store.create_or_load_store()
         else:
             print("Keeping existing collection. Exiting.")
             return
-
-    # Create vector store and add documents
-    vector_store.create_or_load_store()
     vector_store.add_documents(documents, batch_size=100)
 
     # Get final stats

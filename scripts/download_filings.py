@@ -23,18 +23,48 @@ def main():
     # Ensure data directories exist
     settings.ensure_directories()
 
-    # Target companies - mix of tech, finance, healthcare, retail
+    # Target companies - diverse mix across sectors
     tickers = [
-        "AAPL",   # Apple - Tech
-        "MSFT",   # Microsoft - Tech
-        "TSLA",   # Tesla - Automotive/Tech
+        # Technology (6)
+        "AAPL",   # Apple - Consumer Electronics
+        "MSFT",   # Microsoft - Software/Cloud
+        "GOOGL",  # Alphabet - Search/Advertising
+        "META",   # Meta - Social Media
+        "NVDA",   # Nvidia - Semiconductors/AI
         "AMZN",   # Amazon - E-commerce/Cloud
-        "GOOGL",  # Alphabet - Tech
-        "META",   # Meta - Social Media/Tech
-        "NVDA",   # Nvidia - Semiconductors
-        "JPM",    # JPMorgan Chase - Finance
-        "JNJ",    # Johnson & Johnson - Healthcare
+
+        # Automotive (1)
+        "TSLA",   # Tesla - Electric Vehicles
+
+        # Entertainment & Retail (3)
+        "NFLX",   # Netflix - Streaming
         "WMT",    # Walmart - Retail
+        "MCD",    # McDonald's - Fast Food
+
+        # Fintech & Payments (2)
+        "V",      # Visa - Payments
+        "PYPL",   # PayPal - Digital Payments
+
+        # Healthcare & Pharma (3)
+        "JNJ",    # Johnson & Johnson - Healthcare
+        "PFE",    # Pfizer - Pharmaceuticals
+        "MRK",    # Merck - Pharmaceuticals
+
+        # Banks & Finance (3)
+        "JPM",    # JPMorgan Chase - Banking
+        "BAC",    # Bank of America - Banking
+        "GS",     # Goldman Sachs - Investment Banking
+
+        # Energy (2)
+        "XOM",    # ExxonMobil - Oil & Gas
+        "CVX",    # Chevron - Oil & Gas
+
+        # Industrials (2)
+        "CAT",    # Caterpillar - Heavy Equipment
+        "BA",     # Boeing - Aerospace
+
+        # Consumer Goods (1)
+        "KO",     # Coca-Cola - Beverages
     ]
 
     print("="*60)

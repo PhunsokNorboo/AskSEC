@@ -1,17 +1,20 @@
 """SEC Filing Downloader - Download 10-K filings from SEC EDGAR."""
-import os
 import json
-from typing import List, Dict
+import logging
+import os
+
 from edgar import Company, set_identity
 from tqdm import tqdm
 
 from src.utils.config import settings
 
+logger = logging.getLogger("asksec.downloader")
+
 
 class SECFilingDownloader:
     """Download 10-K filings from SEC EDGAR using edgartools."""
 
-    def __init__(self, output_dir: str = None):
+    def __init__(self, output_dir: str | None = None) -> None:
         """
         Initialize the downloader.
 
@@ -27,9 +30,9 @@ class SECFilingDownloader:
 
     def download_10k_filings(
         self,
-        tickers: List[str],
+        tickers: list[str],
         num_filings: int = 2
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """
         Download recent 10-K filings for given tickers.
 
@@ -98,19 +101,19 @@ class SECFilingDownloader:
                         print(f"    Saved: {base_name}.txt ({file_size:.2f} MB)")
 
                     except Exception as e:
-                        print(f"    Error processing filing: {e}")
+                        logger.error(f"Error processing filing for {ticker}: {e}", exc_info=True)
                         continue
 
                 results[ticker] = saved_files
                 print(f"  Total: {len(saved_files)} filings downloaded for {ticker}")
 
             except Exception as e:
-                print(f"  Error downloading {ticker}: {e}")
+                logger.error(f"Error downloading {ticker}: {e}", exc_info=True)
                 results[ticker] = []
 
         return results
 
-    def get_download_summary(self, results: Dict[str, List[str]]) -> None:
+    def get_download_summary(self, results: dict[str, list[str]]) -> None:
         """Print a summary of downloaded filings."""
         print("\n" + "="*60)
         print("DOWNLOAD SUMMARY")
